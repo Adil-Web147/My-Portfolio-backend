@@ -6,13 +6,21 @@ const contactRoutes = require("./routes/contactRoutes");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 
+// Handle uncaught exceptions
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION! 💥 Shutting down...");
   console.error(err.name, err.message);
   process.exit(1);
 });
+
 // Load environment variables
 dotenv.config();
+
+// Initialize Express App ✅
+const app = express();
+
+// Middlewares
+app.use(express.json());
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -21,45 +29,43 @@ app.use((req, res, next) => {
   next();
 });
 
-const app = express();
 app.use(
   cors({
     origin: "*", // Allow all origins
     credentials: true,
   })
 );
-app.use(express.json());
+
 app.use(helmet());
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 100,
   message: "Too many requests from this IP, please try again after 15 minutes",
 });
 app.use("/api/", limiter);
 
-// Connect to MongoDB
+// MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     bufferCommands: false,
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
   })
-  .then(() => console.log("Connected to MongoDB"))
+  .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => {
-    console.error("MongoDB connection error:", err);
+    console.error("❌ MongoDB connection error:", err);
   });
 
 // Routes
 app.use("/api/contact", contactRoutes);
 
-// Basic route for testing
+// Test Route
 app.get("/", (req, res) => {
-  res.send("Portfolio API is running");
+  res.send("✅ Portfolio API is running");
 });
 
-// Error handling middleware
+// Global Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -72,12 +78,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
+// Start Server
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(
+    `🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
+  );
 });
 
+// Handle unhandled promise rejections
 process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION! 💥 Shutting down...");
   console.error(err.name, err.message);
